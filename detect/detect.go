@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/h2non/filetype"
 	"github.com/zricethezav/gitleaks/v8/config"
@@ -218,6 +219,7 @@ func (d *Detector) detectRule(fragment Fragment, rule config.Rule) []report.Find
 	// check if filepath or commit is allowed for this rule
 	if rule.Allowlist.CommitAllowed(fragment.CommitSHA) ||
 		rule.Allowlist.PathAllowed(fragment.FilePath) {
+		log.Debug().Msgf("Skipping globally allowlisted file or commit (%s): %s", fragment.CommitSHA, fragment.FilePath)
 		return findings
 	}
 
@@ -287,8 +289,7 @@ func (d *Detector) detectRule(fragment Fragment, rule config.Rule) []report.Find
 			Line:        fragment.Raw[loc.startLineIndex:loc.endLineIndex],
 		}
 
-		if strings.Contains(fragment.Raw[loc.startLineIndex:loc.endLineIndex],
-			gitleaksAllowSignature) {
+		if strings.Contains(finding.Line, gitleaksAllowSignature) {
 			continue
 		}
 
@@ -393,7 +394,8 @@ func (d *Detector) DetectGit(source string, logOpts string, gitScanType GitScanT
 		commitSHA := ""
 		if gitdiffFile.PatchHeader != nil {
 			commitSHA = gitdiffFile.PatchHeader.SHA
-			if d.Config.Allowlist.CommitAllowed(gitdiffFile.PatchHeader.SHA) {
+			if d.Config.Allowlist.CommitAllowed(commitSHA) {
+				log.Debug().Msgf("Skipping allowlisted commit (%s)", commitSHA)
 				continue
 			}
 		}
@@ -411,8 +413,16 @@ func (d *Detector) DetectGit(source string, logOpts string, gitScanType GitScanT
 					FilePath:  gitdiffFile.NewName,
 				}
 
+				duration := 1*time.Second
+				timer := time.AfterFunc(duration, func() {
+					log.Warn().Msgf("Taking longer than %v to inspect fragment (%s): %v", duration, commitSHA, fragment.FilePath)
+				})
 				for _, finding := range d.Detect(fragment) {
 					d.addFinding(augmentGitFinding(finding, textFragment, gitdiffFile, repoUrl))
+				}
+				if timer != nil {
+					timer.Stop()
+					timer = nil
 				}
 			}
 			return nil
@@ -558,8 +568,10 @@ func (d *Detector) Detect(fragment Fragment) []report.Finding {
 	// check if filepath is allowed
 	if fragment.FilePath != "" && (d.Config.Allowlist.PathAllowed(fragment.FilePath) ||
 		fragment.FilePath == d.Config.Path || (d.baselinePath != "" && fragment.FilePath == d.baselinePath)) {
+		log.Debug().Msgf("Skipping globally allowlisted file (%s): %s", fragment.CommitSHA, fragment.FilePath)
 		return findings
 	}
+	log.Trace().Msgf("Inspecting file (%s): %s", fragment.CommitSHA, fragment.FilePath)
 
 	// add newline indices for location calculation in detectRule
 	fragment.newlineIndices = regexp.MustCompile("\n").FindAllStringIndex(fragment.Raw, -1)

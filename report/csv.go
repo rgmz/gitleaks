@@ -28,6 +28,7 @@ func writeCsv(f []Finding, w io.WriteCloser) error {
 		"Message",
 		"Date",
 		"Email",
+		"Url",
 		"Fingerprint",
 		"Tags",
 	})
@@ -49,6 +50,7 @@ func writeCsv(f []Finding, w io.WriteCloser) error {
 			f.Message,
 			f.Date,
 			f.Email,
+			f.Url,
 			f.Fingerprint,
 			strings.Join(f.Tags, " "),
 		})

@@ -34,6 +34,29 @@ func TestWriteCSV(t *testing.T) {
 					Author:      "John Doe",
 					Email:       "johndoe@gmail.com",
 					Date:        "10-19-2003",
+					Url:         "https://github.com/gitleaks/gitleaks/blob/0000000000000000/auth.py",
+					Fingerprint: "fingerprint",
+				},
+			}},
+		{
+			testReportName: "nourl",
+			expected:       filepath.Join(expectPath, "report", "csv_nourl.csv"),
+			findings: []Finding{
+				{
+					RuleID:      "test-rule",
+					Match:       "line containing secret",
+					Secret:      "a secret",
+					StartLine:   1,
+					EndLine:     2,
+					StartColumn: 1,
+					EndColumn:   2,
+					Message:     "opps",
+					File:        "auth.py",
+					SymlinkFile: "",
+					Commit:      "0000000000000000",
+					Author:      "John Doe",
+					Email:       "johndoe@gmail.com",
+					Date:        "10-19-2003",
 					Fingerprint: "fingerprint",
 					Tags:        []string{"tag1", "tag2", "tag3"},
 				},
@@ -75,7 +98,7 @@ func TestWriteCSV(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			t.Errorf("got %s, want %s", string(got), string(want))
+			t.Errorf("got '%s', want '%s'", string(got), string(want))
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	// "encoding/json"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 
 // augmentGitFinding updates the start and end line numbers of a finding to include the
 // delta from the git diff
-func augmentGitFinding(finding report.Finding, textFragment *gitdiff.TextFragment, f *gitdiff.File) report.Finding {
+func augmentGitFinding(finding report.Finding, textFragment *gitdiff.TextFragment, f *gitdiff.File, repoUrl *string) report.Finding {
 	if !strings.HasPrefix(finding.Match, "file detected") {
 		finding.StartLine += int(textFragment.NewPosition)
 		finding.EndLine += int(textFragment.NewPosition)
@@ -31,6 +32,16 @@ func augmentGitFinding(finding report.Finding, textFragment *gitdiff.TextFragmen
 			finding.Email = f.PatchHeader.Author.Email
 		}
 		finding.Date = f.PatchHeader.AuthorDate.UTC().Format(time.RFC3339)
+	}
+
+	// Works for both GitHub and Gitlab.
+	// TODO: Make it worth for other potential providers.
+	if repoUrl != nil && finding.Commit != "" {
+		url := *repoUrl
+		finding.Url = url + "/blob/" + finding.Commit + "/" + finding.File + "#L" + strconv.Itoa(finding.StartLine)
+		if finding.EndLine != 0 && finding.EndLine != finding.StartLine {
+			finding.Url = finding.Url + "-" + strconv.Itoa(finding.EndLine)
+		}
 	}
 	return finding
 }
@@ -173,6 +184,7 @@ func printFinding(f report.Finding, noColor bool) {
 	fmt.Printf("%-12s %s\n", "Author:", f.Author)
 	fmt.Printf("%-12s %s\n", "Email:", f.Email)
 	fmt.Printf("%-12s %s\n", "Date:", f.Date)
+	fmt.Printf("%-12s %s\n", "Url:", f.Url)
 	fmt.Printf("%-12s %s\n", "Fingerprint:", f.Fingerprint)
 	fmt.Println("")
 }

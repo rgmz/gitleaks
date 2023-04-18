@@ -25,6 +25,7 @@ type Finding struct {
 	File        string
 	SymlinkFile string
 	Commit      string
+	Url         string `json:",omitempty"`
 
 	// Entropy is the shannon entropy of Value
 	Entropy float32

@@ -365,19 +365,27 @@ func (d *Detector) DetectGit(source string, logOpts string, gitScanType GitScanT
 		gitdiffFiles <-chan *gitdiff.File
 		err          error
 	)
+	cleanSource := filepath.Clean(source)
+
+	var repoUrl *string
 	switch gitScanType {
 	case DetectType:
-		gitdiffFiles, err = git.GitLog(source, logOpts)
+		url, err := git.GetRepoUrl(cleanSource)
+		if err != nil {
+			log.Warn().Msgf("Failed to parse remote URL, findings won't include a web URL (%s)", err)
+		}
+		repoUrl = url
+		gitdiffFiles, err = git.GitLog(cleanSource, logOpts)
 		if err != nil {
 			return d.findings, err
 		}
 	case ProtectType:
-		gitdiffFiles, err = git.GitDiff(source, false)
+		gitdiffFiles, err = git.GitDiff(cleanSource, false)
 		if err != nil {
 			return d.findings, err
 		}
 	case ProtectStagedType:
-		gitdiffFiles, err = git.GitDiff(source, true)
+		gitdiffFiles, err = git.GitDiff(cleanSource, true)
 		if err != nil {
 			return d.findings, err
 		}
@@ -416,7 +424,7 @@ func (d *Detector) DetectGit(source string, logOpts string, gitScanType GitScanT
 				}
 
 				for _, finding := range d.Detect(fragment) {
-					d.addFinding(augmentGitFinding(finding, textFragment, gitdiffFile))
+					d.addFinding(augmentGitFinding(finding, textFragment, gitdiffFile, repoUrl))
 				}
 			}
 			return nil

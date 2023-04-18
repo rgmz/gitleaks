@@ -2,9 +2,11 @@ package git
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -80,6 +82,47 @@ func GitDiff(source string, staged bool) (<-chan *gitdiff.File, error) {
 	time.Sleep(50 * time.Millisecond)
 
 	return gitdiff.Parse(cmd, stdout)
+}
+
+// Fetches the repository's default url.
+// TODO: Handle both HTTPS and SSH url.
+// var httpPattern = regexp.MustCompile(`(?i)^https?://([a-z0-9_.-]+)/(.+)\.git$`)
+var sshPattern = regexp.MustCompile(`(?i)^git@([a-z0-9_.-]+):(.+)\.git$`)
+
+func GetRepoUrl(source string) (*string, error) {
+	sourceClean := filepath.Clean(source)
+	// TODO: Check for the default remote, don't just assume it's 'origin'.
+	cmd := exec.Command("git", "-C", sourceClean, "remote", "get-url", "origin")
+
+	var out strings.Builder
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	url := out.String()
+	url = strings.TrimSuffix(url, "\n")
+
+	var domain string
+	var path string
+	if strings.HasPrefix(url, "git@") {
+		match := sshPattern.FindStringSubmatch(url)
+		if match != nil {
+			domain = match[1]
+			path = match[2]
+		} else {
+			return nil, fmt.Errorf("failed to parse domain and path for SSH url")
+		}
+	} else if strings.HasPrefix(url, "http") {
+		// Do nothing
+	} else {
+		return nil, fmt.Errorf("expected repository URL to start with 'http' or 'git', not %s", url)
+	}
+
+	url = "https://" + domain + "/" + path
+	return &url, nil
 }
 
 // listenForStdErr listens for stderr output from git and prints it to stdout

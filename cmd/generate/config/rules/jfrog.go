@@ -22,7 +22,7 @@ func JFrogAPIKey() *config.Rule {
 		SecretGroup: 1,
 
 		// Regex used for detecting secrets. See regex section below for more details
-		Regex: generateSemiGenericRegex(keywords, alphaNumeric("73")),
+		Regex: generateSemiGenericRegex(keywords, alphaNumeric("73"), true),
 
 		// Keywords used for string matching on fragments (think of this as a prefilter)
 		Keywords: keywords,
@@ -50,7 +50,7 @@ func JFrogIdentityToken() *config.Rule {
 		SecretGroup: 1,
 
 		// Regex used for detecting secrets. See regex section below for more details
-		Regex: generateSemiGenericRegex(keywords, alphaNumeric("64")),
+		Regex: generateSemiGenericRegex(keywords, alphaNumeric("64"), true),
 
 		// Keywords used for string matching on fragments (think of this as a prefilter)
 		Keywords: keywords,

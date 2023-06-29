@@ -28,9 +28,11 @@ const (
 	secretSuffix       = `)(?:['|\"|\n|\r|\s|\x60|;]|$)`
 )
 
-func generateSemiGenericRegex(identifiers []string, secretRegex string) *regexp.Regexp {
+func generateSemiGenericRegex(identifiers []string, secretRegex string, isCaseInsensitive bool) *regexp.Regexp {
 	var sb strings.Builder
-	sb.WriteString(caseInsensitive)
+	if isCaseInsensitive {
+		sb.WriteString(caseInsensitive)
+	}
 	sb.WriteString(identifierPrefix)
 	sb.WriteString(strings.Join(identifiers, "|"))
 	sb.WriteString(identifierSuffix)
@@ -41,9 +43,11 @@ func generateSemiGenericRegex(identifiers []string, secretRegex string) *regexp.
 	return regexp.MustCompile(sb.String())
 }
 
-func generateUniqueTokenRegex(secretRegex string) *regexp.Regexp {
+func generateUniqueTokenRegex(secretRegex string, isCaseInsensitive bool) *regexp.Regexp {
 	var sb strings.Builder
-	sb.WriteString(caseInsensitive)
+	if isCaseInsensitive {
+		sb.WriteString(caseInsensitive)
+	}
 	sb.WriteString(secretPrefixUnique)
 	sb.WriteString(secretRegex)
 	sb.WriteString(secretSuffix)

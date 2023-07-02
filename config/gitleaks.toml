@@ -2735,8 +2735,9 @@ keywords = [
 [[rules]]
 description = "SumoLogic Access ID"
 id = "sumologic-access-id"
-regex = '''(?i)(?:sumo)(?:[0-9a-z\-_\t .]{0,20})(?:[\s|']|[\s|"]){0,3}(?:=|>|:{1,3}=|\|\|:|<=|=>|:|\?=)(?:'|\"|\s|=|\x60){0,5}([a-z0-9]{14})(?:['|\"|\n|\r|\s|\x60|;]|$)'''
+regex = '''(?i)(?:sumo)(?:[0-9a-z\-_\t .]{0,20})(?:[\s|']|[\s|"]){0,3}(?:=|>|:{1,3}=|\|\|:|<=|=>|:|\?=)(?:'|\"|\s|=|\x60){0,5}(su[a-zA-Z0-9]{12})(?:['|\"|\n|\r|\s|\x60|;]|$)'''
 secretGroup = 1
+entropy = 3
 keywords = [
     "sumo",
 ]
@@ -2746,6 +2747,7 @@ description = "SumoLogic Access Token"
 id = "sumologic-access-token"
 regex = '''(?i)(?:sumo)(?:[0-9a-z\-_\t .]{0,20})(?:[\s|']|[\s|"]){0,3}(?:=|>|:{1,3}=|\|\|:|<=|=>|:|\?=)(?:'|\"|\s|=|\x60){0,5}([a-z0-9]{64})(?:['|\"|\n|\r|\s|\x60|;]|$)'''
 secretGroup = 1
+entropy = 3
 keywords = [
     "sumo",
 ]

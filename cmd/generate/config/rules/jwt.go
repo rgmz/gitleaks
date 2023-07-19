@@ -9,7 +9,7 @@ func JWT() *config.Rule {
 	r := config.Rule{
 		Description: "JSON Web Token",
 		RuleID:      "jwt",
-		Regex:       generateUniqueTokenRegex(`ey[0-9a-z]{17,250}\.ey[0-9a-z-\/_]{17,750}\.[0-9a-zA-Z-\/_]{10,500}={0,2}`),
+		Regex:       generateUniqueTokenRegex(`ey[0-9a-zA-Z]{17,500}\.ey[0-9a-zA-Z-\/\\_]{17,1000}\.(?:[0-9a-zA-Z-\/\\_]{10,750}={0,2})?`),
 		Keywords:    []string{"ey"},
 	}
 
@@ -54,8 +54,8 @@ func JWT() *config.Rule {
 		// TODO: Detect empty claims section?
 		// `eyJhbGciOiJFQ0RILUVTIiwiZW5jIjoiQTI1NkdDTSIsImVwayI6eyJrdHkiOiJFQyIsImNydiI6IlAtMzg0Iiwia2V5X29wcyI6W10sImV4dCI6dHJ1ZSwieCI6IllUcEY3bGtTc3JvZVVUVFdCb21LNzBTN0FhVTJyc0ptMURpZ1ZzbjRMY2F5eUxFNFBabldkYmFVcE9jQVV5a1ciLCJ5IjoiLU5pS3loUktjSk52Nm02Z0ZJUWc4cy1Xd1VXUW9uT3A5dkQ4cHpoa2tUU3U2RzFlU2FUTVlhZGltQ2Q4V0ExMSJ9LCJhcHUiOiIiLCJhcHYiOiIifQ`,
 		// TODO: Detect `"alg": "none"`?
-		// `String tokenWithNoneAlg = "eyJhbGciOiJub25lIn0.eyJzdWIiOiJ0ZXN0LXVzZXIifQ.";`, // gitleaks:allow
-		// `# Req: Invoke-RestMethod -Uri 'http://localhost:8085/users' -Headers @{ 'X-API-KEY' = 'eyJhbGciOiJub25lIn0.eyJ1c2VybmFtZSI6Im1vcnR5Iiwic3ViIjoiMTIzIn0.' }`, // gitleaks:allow
+		`String tokenWithNoneAlg = "eyJhbGciOiJub25lIn0.eyJzdWIiOiJ0ZXN0LXVzZXIifQ.";`,                                                                               // gitleaks:allow
+		`# Req: Invoke-RestMethod -Uri 'http://localhost:8085/users' -Headers @{ 'X-API-KEY' = 'eyJhbGciOiJub25lIn0.eyJ1c2VybmFtZSI6Im1vcnR5Iiwic3ViIjoiMTIzIn0.' }`, // gitleaks:allow
 	}
 	fps := []string{}
 	return validate(r, tps, fps)

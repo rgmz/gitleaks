@@ -17,12 +17,20 @@ import (
 const maxPeekSize = 25 * 1_000 // 10kb
 
 func (d *Detector) DetectFiles(paths <-chan sources.ScanTarget) ([]report.Finding, error) {
-	for pa := range paths {
+	for p := range paths {
+		logger := logging.With().Str("path", p.Path).Logger()
+		// Check if the file is worth scanning.
+		if ok, reason := shouldScanBinaryFile(p.Path); !ok {
+			logger.Trace().Str("reason", reason).Msg("Skipping binary file.")
+			continue
+		}
+		logger.Trace().Msg("Scanning path")
+
 		d.Sema.Go(func() error {
-			logger := logging.With().Str("path", pa.Path).Logger()
+			logger := logging.With().Str("path", p.Path).Logger()
 			logger.Trace().Msg("Scanning path")
 
-			f, err := os.Open(pa.Path)
+			f, err := os.Open(p.Path)
 			if err != nil {
 				if os.IsPermission(err) {
 					logger.Warn().Msg("Skipping file: permission denied")
@@ -42,10 +50,12 @@ func (d *Detector) DetectFiles(paths <-chan sources.ScanTarget) ([]report.Findin
 			fileSize := fileInfo.Size()
 			if d.MaxTargetMegaBytes > 0 {
 				rawLength := fileSize / 1000000
-				if rawLength > int64(d.MaxTargetMegaBytes) {
+				if rawLength > d.MaxTargetMegaBytes {
 					logger.Debug().
 						Int64("size", rawLength).
-						Msg("Skipping file: exceeds --max-target-megabytes")
+						Int64("limit", d.MaxTargetMegaBytes).
+						Str("reason", "size").
+						Msg("Skipping binary file.")
 					return nil
 				}
 			}
@@ -68,9 +78,27 @@ func (d *Detector) DetectFiles(paths <-chan sources.ScanTarget) ([]report.Findin
 						if mimetype, err := filetype.Match(buf[:n]); err != nil {
 							return nil
 						} else if mimetype.MIME.Type == "application" {
-							return nil // skip binary files
+							if !d.ScanBinaryFiles {
+								logger.Trace().
+									Str("reason", "binary scanning not enabled").
+									Msg("Skipping binary file.")
+								return nil // skip binary files
+							}
+						} else if mimetype.Extension != "unknown" {
+							logger.Info().
+								Str("type", mimetype.MIME.Type).
+								Str("value", mimetype.MIME.Value).
+								Str("subtype", mimetype.MIME.Subtype).
+								Str("extension", mimetype.Extension).
+								Msg("mimetype info")
 						}
 					}
+
+					// if err = handleFile(filePath, reader); err != nil {
+					//	log.Error().Err(err).
+					//		Str("path", filePath).
+					//		Msgf("Failed to identify file")
+					// }
 
 					// Try to split chunks across large areas of whitespace, if possible.
 					peekBuf := bytes.NewBuffer(buf[:n])
@@ -85,10 +113,10 @@ func (d *Detector) DetectFiles(paths <-chan sources.ScanTarget) ([]report.Findin
 					fragment := Fragment{
 						Raw:      chunk,
 						Bytes:    peekBuf.Bytes(),
-						FilePath: pa.Path,
+						FilePath: p.Path,
 					}
-					if pa.Symlink != "" {
-						fragment.SymlinkFile = pa.Symlink
+					if p.Symlink != "" {
+						fragment.SymlinkFile = p.Symlink
 					}
 					for _, finding := range d.Detect(fragment) {
 						// need to add 1 since line counting starts at 1

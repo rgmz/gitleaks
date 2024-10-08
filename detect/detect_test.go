@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -623,7 +624,10 @@ func TestFromGit(t *testing.T) {
 			for _, f := range findings {
 				f.Match = "" // remove lines cause copying and pasting them has some wack formatting
 			}
-			assert.ElementsMatch(t, tt.expectedFindings, findings)
+			less := func(a, b string) bool { return a < b }
+			if diff := cmp.Diff(tt.expectedFindings, findings, cmpopts.SortSlices(less)); diff != "" {
+				t.Errorf("%s diff: (-want +got)\n%s", tt.cfgName, diff)
+			}
 		})
 	}
 }
@@ -807,7 +811,10 @@ func TestFromFiles(t *testing.T) {
 		require.NoError(t, err)
 		findings, err := detector.DetectFiles(paths)
 		require.NoError(t, err)
-		assert.ElementsMatch(t, tt.expectedFindings, findings)
+
+		if diff := cmp.Diff(tt.expectedFindings, findings); diff != "" {
+			t.Errorf("%s diff: (-want +got)\n%s", tt.cfgName, diff)
+		}
 	}
 }
 

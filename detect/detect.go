@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -251,12 +252,13 @@ func (d *Detector) detectRule(fragment Fragment, currentRaw string, rule config.
 		// Path _only_ rule
 		if rule.Path.MatchString(fragment.FilePath) {
 			finding := report.Finding{
-				Description: rule.Description,
-				File:        fragment.FilePath,
-				SymlinkFile: fragment.SymlinkFile,
-				RuleID:      rule.RuleID,
-				Match:       fmt.Sprintf("file detected: %s", fragment.FilePath),
-				Tags:        rule.Tags,
+				Description:    rule.Description,
+				File:           fragment.FilePath,
+				NormalizedFile: filepath.ToSlash(fragment.FilePath),
+				SymlinkFile:    fragment.SymlinkFile,
+				RuleID:         rule.RuleID,
+				Match:          fmt.Sprintf("file detected: %s", fragment.FilePath),
+				Tags:           rule.Tags,
 			}
 			return append(findings, finding)
 		}
@@ -319,18 +321,19 @@ func (d *Detector) detectRule(fragment Fragment, currentRaw string, rule config.
 		}
 
 		finding := report.Finding{
-			Description: rule.Description,
-			File:        fragment.FilePath,
-			SymlinkFile: fragment.SymlinkFile,
-			RuleID:      rule.RuleID,
-			StartLine:   loc.startLine,
-			EndLine:     loc.endLine,
-			StartColumn: loc.startColumn,
-			EndColumn:   loc.endColumn,
-			Secret:      secret,
-			Match:       secret,
-			Tags:        append(rule.Tags, metaTags...),
-			Line:        fragment.Raw[loc.startLineIndex:loc.endLineIndex],
+			RuleID:         rule.RuleID,
+			Description:    rule.Description,
+			File:           fragment.FilePath,
+			NormalizedFile: filepath.ToSlash(fragment.FilePath),
+			SymlinkFile:    fragment.SymlinkFile,
+			StartLine:      loc.startLine,
+			EndLine:        loc.endLine,
+			StartColumn:    loc.startColumn,
+			EndColumn:      loc.endColumn,
+			Line:           fragment.Raw[loc.startLineIndex:loc.endLineIndex],
+			Match:          secret,
+			Secret:         secret,
+			Tags:           append(rule.Tags, metaTags...),
 		}
 
 		if strings.Contains(fragment.Raw[loc.startLineIndex:loc.endLineIndex],
@@ -422,22 +425,31 @@ func (d *Detector) detectRule(fragment Fragment, currentRaw string, rule config.
 // addFinding synchronously adds a finding to the findings slice
 func (d *Detector) addFinding(finding report.Finding) {
 	globalFingerprint := fmt.Sprintf("%s:%s:%d", finding.File, finding.RuleID, finding.StartLine)
+	normalizedGlobalFingerprint := fmt.Sprintf("%s:%s:%d", finding.NormalizedFile, finding.RuleID, finding.StartLine)
 	if finding.Commit != "" {
 		finding.Fingerprint = fmt.Sprintf("%s:%s:%s:%d", finding.Commit, finding.File, finding.RuleID, finding.StartLine)
+		finding.NormalizedFingerprint = fmt.Sprintf("%s:%s:%s:%d", finding.Commit, finding.NormalizedFile, finding.RuleID, finding.StartLine)
 	} else {
 		finding.Fingerprint = globalFingerprint
+		finding.NormalizedFingerprint = normalizedGlobalFingerprint
 	}
 
 	// check if we should ignore this finding
 	if _, ok := d.gitleaksIgnore[globalFingerprint]; ok {
-		log.Debug().Msgf("ignoring finding with global Fingerprint %s",
-			finding.Fingerprint)
+		log.Debug().Msgf("ignoring finding with global Fingerprint %s", finding.Fingerprint)
 		return
-	} else if finding.Commit != "" {
+	} else if _, ok := d.gitleaksIgnore[normalizedGlobalFingerprint]; ok {
+		log.Debug().Msgf("ignoring finding with normalized global Fingerprint %s", finding.NormalizedFingerprint)
+		return
+	}
+
+	if finding.Commit != "" {
 		// Awkward nested if because I'm not sure how to chain these two conditions.
 		if _, ok := d.gitleaksIgnore[finding.Fingerprint]; ok {
-			log.Debug().Msgf("ignoring finding with Fingerprint %s",
-				finding.Fingerprint)
+			log.Debug().Msgf("ignoring finding with Fingerprint %s", finding.Fingerprint)
+			return
+		} else if _, ok := d.gitleaksIgnore[finding.NormalizedFingerprint]; ok {
+			log.Debug().Msgf("ignoring finding with Fingerprint %s", finding.NormalizedFingerprint)
 			return
 		}
 	}

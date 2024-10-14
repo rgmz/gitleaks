@@ -23,9 +23,10 @@ type Finding struct {
 	Secret string
 
 	// File is the name of the file containing the finding
-	File        string
-	SymlinkFile string
-	Commit      string
+	File           string
+	NormalizedFile string `json:"-"`
+	SymlinkFile    string
+	Commit         string
 
 	// Entropy is the shannon entropy of Value
 	Entropy float32
@@ -40,7 +41,8 @@ type Finding struct {
 	RuleID string
 
 	// unique identifier
-	Fingerprint string
+	Fingerprint           string
+	NormalizedFingerprint string `json:"-"`
 }
 
 // Redact removes sensitive information from a finding.

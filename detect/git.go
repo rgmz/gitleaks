@@ -3,11 +3,12 @@ package detect
 import (
 	"github.com/gitleaks/go-gitdiff/gitdiff"
 	"github.com/rs/zerolog/log"
+	"github.com/zricethezav/gitleaks/v8/cmd/scm"
 	"github.com/zricethezav/gitleaks/v8/report"
 	"github.com/zricethezav/gitleaks/v8/sources"
 )
 
-func (d *Detector) DetectGit(gitCmd *sources.GitCmd) ([]report.Finding, error) {
+func (d *Detector) DetectGit(gitCmd *sources.GitCmd, scmProvider scm.Provider) ([]report.Finding, error) {
 	defer gitCmd.Wait()
 	diffFilesCh := gitCmd.DiffFilesCh()
 	errCh := gitCmd.ErrCh()
@@ -49,7 +50,7 @@ func (d *Detector) DetectGit(gitCmd *sources.GitCmd) ([]report.Finding, error) {
 					}
 
 					for _, finding := range d.Detect(fragment) {
-						d.addFinding(augmentGitFinding(finding, textFragment, gitdiffFile))
+						d.addFinding(augmentGitFinding(scmProvider, d.RepositoryUrl, finding, textFragment, gitdiffFile))
 					}
 				}
 				return nil

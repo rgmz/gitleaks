@@ -19,6 +19,7 @@
 package cmd
 
 import (
+	"github.com/zricethezav/gitleaks/v8/cmd/scm"
 	"os"
 	"time"
 
@@ -102,9 +103,15 @@ func runDetect(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		var (
-			gitCmd  *sources.GitCmd
-			logOpts string
+			gitCmd      *sources.GitCmd
+			scmProvider scm.Provider
+			logOpts     string
 		)
+		if scmProviderStr, err := cmd.Flags().GetString("scm"); err != nil {
+			log.Fatal().Err(err).Msg("could not call GetString() for scm")
+		} else {
+			scmProvider, err = scm.ProviderFromString(scmProviderStr)
+		}
 		logOpts, err = cmd.Flags().GetString("log-opts")
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not call GetString() for log-opts")
@@ -113,7 +120,7 @@ func runDetect(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatal().Err(err).Msg("could not create Git cmd")
 		}
-		findings, err = detector.DetectGit(gitCmd)
+		findings, err = detector.DetectGit(gitCmd, scmProvider)
 		if err != nil {
 			// don't exit on error, just log it
 			log.Error().Err(err).Msg("failed to scan Git repository")

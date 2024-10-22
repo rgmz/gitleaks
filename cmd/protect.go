@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/zricethezav/gitleaks/v8/cmd/scm"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -34,6 +35,12 @@ func runProtect(cmd *cobra.Command, args []string) {
 	// setup config (aka, the thing that defines rules)
 	cfg := Config(cmd)
 
+	var scmProvider scm.Provider
+	if scmProviderStr, err := cmd.Flags().GetString("scm"); err != nil {
+		log.Fatal().Err(err).Msg("could not call GetString() for scm")
+	} else {
+		scmProvider, err = scm.ProviderFromString(scmProviderStr)
+	}
 	exitCode, _ := cmd.Flags().GetInt("exit-code")
 	staged, _ := cmd.Flags().GetBool("staged")
 	start := time.Now()
@@ -45,7 +52,7 @@ func runProtect(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("")
 	}
-	findings, err = detector.DetectGit(gitCmd)
+	findings, err = detector.DetectGit(gitCmd, scmProvider)
 
 	findingSummaryAndExit(findings, cmd, cfg, exitCode, start, err)
 }

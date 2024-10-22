@@ -79,6 +79,7 @@ func CreateGlobalConfig() config.Config {
 				regexp.MustCompile(`(^|/)pnpm-lock\.yaml$`),
 				regexp.MustCompile(`(^|/)npm-shrinkwrap\.json$`),
 				regexp.MustCompile(`(^|/)bower_components/.*?$`),
+				regexp.MustCompile(`(^|/)javascript\.json$`),
 
 				// ----------- Python files -----------
 				// Dependencies and lock files.

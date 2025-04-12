@@ -55,6 +55,11 @@ func (d *Detector) DetectGit(cmd *sources.GitCmd, remote *RemoteInfo) ([]report.
 						return nil
 					}
 
+					logging.Info().
+						Str("OpAdd", textFragment.Raw(gitdiff.OpAdd)).
+						Str("OpContext", textFragment.Raw(gitdiff.OpContext)).
+						Str("OpDelete", textFragment.Raw(gitdiff.OpDelete)).
+						Msg("Found text fragment")
 					fragment := Fragment{
 						Raw:       textFragment.Raw(gitdiff.OpAdd),
 						CommitSHA: commitSHA,

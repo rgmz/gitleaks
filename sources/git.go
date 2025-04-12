@@ -30,7 +30,7 @@ func NewGitLogCmd(source string, logOpts string) (*GitCmd, error) {
 	sourceClean := filepath.Clean(source)
 	var cmd *exec.Cmd
 	if logOpts != "" {
-		args := []string{"-C", sourceClean, "log", "-p", "-U0"}
+		args := []string{"-C", sourceClean, "log", "-p", "-U10"}
 
 		// Ensure that the user-provided |logOpts| aren't wrapped in quotes.
 		// https://github.com/gitleaks/gitleaks/issues/1153
@@ -48,7 +48,7 @@ func NewGitLogCmd(source string, logOpts string) (*GitCmd, error) {
 		args = append(args, userArgs...)
 		cmd = exec.Command("git", args...)
 	} else {
-		cmd = exec.Command("git", "-C", sourceClean, "log", "-p", "-U0",
+		cmd = exec.Command("git", "-C", sourceClean, "log", "-p", "-U10",
 			"--full-history", "--all")
 	}
 
@@ -87,9 +87,9 @@ func NewGitLogCmd(source string, logOpts string) (*GitCmd, error) {
 func NewGitDiffCmd(source string, staged bool) (*GitCmd, error) {
 	sourceClean := filepath.Clean(source)
 	var cmd *exec.Cmd
-	cmd = exec.Command("git", "-C", sourceClean, "diff", "-U0", "--no-ext-diff", ".")
+	cmd = exec.Command("git", "-C", sourceClean, "diff", "-U10", "--no-ext-diff", ".")
 	if staged {
-		cmd = exec.Command("git", "-C", sourceClean, "diff", "-U0", "--no-ext-diff",
+		cmd = exec.Command("git", "-C", sourceClean, "diff", "-U10", "--no-ext-diff",
 			"--staged", ".")
 	}
 	logging.Debug().Msgf("executing: %s", cmd.String())
